@@ -1,5 +1,8 @@
 # reactotron-mcp
 
+[![Install in VS Code](https://img.shields.io/badge/Install_in-VS_Code-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=reactotron&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22reactotron-mcp%22%5D%2C%22env%22%3A%7B%7D%7D)
+[![Install in Cursor](https://img.shields.io/badge/Install_in-Cursor-000000?style=flat-square&logoColor=white)](https://cursor.com/en/install-mcp?name=reactotron&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsInJlYWN0b3Ryb24tbWNwIl0sImVudiI6e319)
+
 An MCP (Model Context Protocol) server for [Reactotron](https://github.com/infinitered/reactotron), enabling AI assistants to read logs, inspect app state, monitor network requests, and trigger custom commands in your React or React Native app.
 
 ## How it works
@@ -22,6 +25,18 @@ Your app connects to the proxy instead of directly to Reactotron. The proxy forw
 - Your app pointed at the proxy port (default `9091`) instead of Reactotron directly
 
 ## Installation
+
+### Claude Code
+
+```bash
+claude mcp add reactotron-mcp npx reactotron-mcp
+```
+
+Or with Bun:
+
+```bash
+claude mcp add reactotron-mcp bunx reactotron-mcp
+```
 
 ### npx (Node)
 
