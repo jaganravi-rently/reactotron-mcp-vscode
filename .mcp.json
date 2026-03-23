@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "reactotron": {
+      "command": "npx",
+      "args": ["-y", "reactotron-mcp"]
+    }
+  }
+}
