@@ -110,8 +110,12 @@ Reactotron.configure({ host: 'localhost', port: 9091 }).connect()
 | `get_state`           | Query the app's state tree. Browse keys at a path or read the value.        |
 | `get_network`         | View captured API requests and responses. Filter by URL, status code, and limit. |
 | `get_timeline`        | Full chronological timeline of all Reactotron messages.                     |
+| `get_state_actions`   | View completed Redux or MobX-State-Tree actions. Filter by action type substring and limit. |
+| `get_state_changes`   | View state mutation events. Filter by state path substring and limit.       |
+| `get_benchmarks`      | View performance benchmark reports with per-step timings. Filter by title and limit. |
 | `run_custom_command`  | List or trigger custom commands registered by the app.                      |
 | `dispatch_action`     | Dispatch a Redux or MobX-State-Tree action to the app.                      |
+| `clear_messages`      | Clear captured messages from the in-memory buffer. Clears all buffers or a specific message type. |
 
 ## Development
 
