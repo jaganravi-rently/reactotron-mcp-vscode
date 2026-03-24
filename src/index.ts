@@ -16,6 +16,9 @@ import { registerLogsResource } from "./resources/logs.js"
 import { registerNetworkResource } from "./resources/network.js"
 import { registerTimelineResource } from "./resources/timeline.js"
 import { registerStateResource } from "./resources/state.js"
+import { registerStateActionsResource } from "./resources/state-actions.js"
+import { registerStateChangesResource } from "./resources/state-changes.js"
+import { registerBenchmarksResource } from "./resources/benchmarks.js"
 
 const reactotronPort = parseInt(process.env.REACTOTRON_PORT ?? "9090", 10)
 const proxyPort = parseInt(process.env.REACTOTRON_PROXY_PORT ?? "9091", 10)
@@ -44,6 +47,9 @@ registerLogsResource(server, store)
 registerNetworkResource(server, store)
 registerTimelineResource(server, store)
 registerStateResource(server, proxy)
+registerStateActionsResource(server, store)
+registerStateChangesResource(server, store)
+registerBenchmarksResource(server, store)
 
 const transport = new StdioServerTransport()
 await server.connect(transport)
