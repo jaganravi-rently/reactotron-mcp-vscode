@@ -50,3 +50,26 @@ export interface CustomCommandRegistration {
   description?: string
   args?: Array<{ name: string; type?: string }>
 }
+
+export interface StateActionCompletePayload {
+  action: {
+    type: string
+    payload?: unknown
+  }
+  ms?: number
+}
+
+export interface StateValuesChangePayload {
+  changes: Array<{
+    path: string
+    value: unknown
+  }>
+}
+
+export interface BenchmarkReportPayload {
+  title: string
+  steps: Array<{
+    title: string
+    time: number
+  }>
+}

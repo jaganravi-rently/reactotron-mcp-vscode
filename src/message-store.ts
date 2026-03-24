@@ -1,4 +1,4 @@
-import type { ReactotronMessage, LogPayload, ApiResponsePayload, CustomCommandRegistration } from "./types.js"
+import type { ReactotronMessage, LogPayload, ApiResponsePayload, CustomCommandRegistration, StateActionCompletePayload, StateValuesChangePayload, BenchmarkReportPayload } from "./types.js"
 
 const MAX_BUFFER = 1000
 
@@ -96,6 +96,42 @@ export class MessageStore {
       items = items.filter((m) => {
         const payload = m.payload as ApiResponsePayload
         return payload?.response?.status === opts.status
+      })
+    }
+    return items.slice(-(opts.limit ?? 50))
+  }
+
+  getStateActions(opts: { actionType?: string; limit?: number } = {}): ReactotronMessage[] {
+    let items = this.stateActions
+    if (opts.actionType) {
+      const q = opts.actionType.toLowerCase()
+      items = items.filter((m) => {
+        const payload = m.payload as StateActionCompletePayload
+        return payload?.action?.type?.toLowerCase().includes(q)
+      })
+    }
+    return items.slice(-(opts.limit ?? 50))
+  }
+
+  getStateChanges(opts: { path?: string; limit?: number } = {}): ReactotronMessage[] {
+    let items = this.stateChanges
+    if (opts.path) {
+      const q = opts.path.toLowerCase()
+      items = items.filter((m) => {
+        const payload = m.payload as StateValuesChangePayload
+        return payload?.changes?.some((c) => c.path?.toLowerCase().includes(q))
+      })
+    }
+    return items.slice(-(opts.limit ?? 50))
+  }
+
+  getBenchmarks(opts: { search?: string; limit?: number } = {}): ReactotronMessage[] {
+    let items = this.benchmarks
+    if (opts.search) {
+      const q = opts.search.toLowerCase()
+      items = items.filter((m) => {
+        const payload = m.payload as BenchmarkReportPayload
+        return payload?.title?.toLowerCase().includes(q)
       })
     }
     return items.slice(-(opts.limit ?? 50))
