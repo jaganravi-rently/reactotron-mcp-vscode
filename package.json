@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/steve228uk/reactotron-mcp.git"
+    "url": "git+https://github.com/steve228uk/reactotron-mcp.git"
   },
   "homepage": "https://github.com/steve228uk/reactotron-mcp#readme",
   "bugs": {
@@ -31,9 +31,11 @@
   },
   "license": "MIT",
   "type": "module",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "bin": {
-    "reactotron-mcp": "./dist/index.js"
+    "reactotron-mcp": "dist/index.js"
   },
   "scripts": {
     "build": "bun build src/index.ts --outfile dist/index.js --target node --banner '#!/usr/bin/env node' && chmod +x dist/index.js",
