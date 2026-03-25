@@ -117,6 +117,7 @@ Reactotron.configure({ host: 'localhost', port: 9091 }).connect()
 | `get_benchmarks`        | View performance benchmark reports with per-step timings. Filter by title and limit.            |
 | `get_displays`          | Read custom display messages sent via `reactotron.display()`. Filter by name/preview text and limit. |
 | `get_errors`            | Consolidated view of error-level logs and failed network requests (4xx/5xx) in one call.        |
+| `get_images`            | Retrieve images logged via `reactotron.image()`, rendered inline as native MCP image content.   |
 | `get_app_info`          | Show connected app metadata from the Reactotron handshake: name, version, platform, React/RN versions. |
 | `get_connection_status` | Check whether an app is connected, including app name, platform, and proxy port.                |
 | `run_custom_command`    | List or trigger custom commands registered by the app.                                          |
@@ -140,6 +141,7 @@ Resources expose the same data as tools but as readable URIs, useful for attachi
 | Display Messages                  | `reactotron://displays`         | Latest 50 `reactotron.display()` messages        |
 | Custom Commands                   | `reactotron://custom-commands`  | All registered custom commands                   |
 | Connection                        | `reactotron://connection`       | Connection status and app info                   |
+| Images                            | `reactotron://images`           | Metadata list of captured images (use `get_images` tool to view inline) |
 
 ## Prompts
 

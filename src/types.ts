@@ -81,6 +81,15 @@ export interface DisplayPayload {
   important?: boolean
 }
 
+export interface ImagePayload {
+  uri: string
+  preview?: string
+  filename?: string
+  width?: number
+  height?: number
+  transparent?: boolean
+}
+
 export interface ClientIntroPayload {
   name?: string
   version?: string

@@ -1,4 +1,4 @@
-import type { ReactotronMessage, LogPayload, ApiResponsePayload, CustomCommandRegistration, StateActionCompletePayload, StateValuesChangePayload, BenchmarkReportPayload, ClientIntroPayload } from "./types.js"
+import type { ReactotronMessage, LogPayload, ApiResponsePayload, CustomCommandRegistration, StateActionCompletePayload, StateValuesChangePayload, BenchmarkReportPayload, ClientIntroPayload, ImagePayload } from "./types.js"
 
 const MAX_BUFFER = 1000
 
@@ -11,6 +11,7 @@ const MESSAGE_TYPE_TO_URIS: Record<string, string[]> = {
   "state.values.change": ["reactotron://state-changes", "reactotron://timeline"],
   "benchmark.report": ["reactotron://benchmarks", "reactotron://timeline"],
   display: ["reactotron://displays", "reactotron://timeline"],
+  image: ["reactotron://images", "reactotron://timeline"],
   "client.intro": ["reactotron://connection"],
   "customCommand.register": ["reactotron://custom-commands"],
   "customCommand.unregister": ["reactotron://custom-commands"],
@@ -43,6 +44,7 @@ export class MessageStore {
   stateChanges: ReactotronMessage[] = []
   benchmarks: ReactotronMessage[] = []
   displays: ReactotronMessage[] = []
+  images: ReactotronMessage[] = []
   timeline: ReactotronMessage[] = []
   customCommands = new Map<string, CustomCommandRegistration>()
   clientInfo: ClientIntroPayload | null = null
@@ -76,6 +78,9 @@ export class MessageStore {
         break
       case "display":
         addToBuffer(this.displays, msg)
+        break
+      case "image":
+        addToBuffer(this.images, msg)
         break
       case "client.intro":
         this.clientInfo = msg.payload as ClientIntroPayload
@@ -182,6 +187,10 @@ export class MessageStore {
     return items.slice(-(opts.limit ?? 50))
   }
 
+  getImages(opts: { limit?: number } = {}): ReactotronMessage[] {
+    return this.images.slice(-(opts.limit ?? 20))
+  }
+
   getBenchmarks(opts: { search?: string; limit?: number } = {}): ReactotronMessage[] {
     let items = this.benchmarks
     if (opts.search) {
@@ -211,6 +220,7 @@ export class MessageStore {
       this.stateChanges = []
       this.benchmarks = []
       this.displays = []
+      this.images = []
       this.timeline = []
       return count
     }
@@ -221,6 +231,7 @@ export class MessageStore {
       "state.values.change": this.stateChanges,
       "benchmark.report": this.benchmarks,
       display: this.displays,
+      image: this.images,
     }
     const buffer = buffers[type]
     if (!buffer) return 0

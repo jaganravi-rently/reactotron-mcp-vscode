@@ -17,6 +17,7 @@ import { registerGetConnectionStatus } from "./tools/get-connection-status.js"
 import { registerGetDisplays } from "./tools/get-displays.js"
 import { registerGetAppInfo } from "./tools/get-app-info.js"
 import { registerGetErrors } from "./tools/get-errors.js"
+import { registerGetImages } from "./tools/get-images.js"
 import { registerDebugAppPrompt } from "./prompts/debug-app.js"
 import { registerTraceActionPrompt } from "./prompts/trace-action.js"
 import { registerDiagnoseNetworkPrompt } from "./prompts/diagnose-network.js"
@@ -32,6 +33,7 @@ import { registerBenchmarksResource } from "./resources/benchmarks.js"
 import { registerDisplaysResource } from "./resources/displays.js"
 import { registerCustomCommandsResource } from "./resources/custom-commands.js"
 import { registerConnectionResource } from "./resources/connection.js"
+import { registerImagesResource } from "./resources/images.js"
 
 const reactotronPort = parseInt(process.env.REACTOTRON_PORT ?? "9090", 10)
 const proxyPort = parseInt(process.env.REACTOTRON_PROXY_PORT ?? "9091", 10)
@@ -60,6 +62,7 @@ registerGetConnectionStatus(server, proxy, store)
 registerGetDisplays(server, store)
 registerGetAppInfo(server, store)
 registerGetErrors(server, store)
+registerGetImages(server, store)
 
 registerDebugAppPrompt(server)
 registerTraceActionPrompt(server)
@@ -77,6 +80,7 @@ registerBenchmarksResource(server, store)
 registerDisplaysResource(server, store)
 registerCustomCommandsResource(server, store)
 registerConnectionResource(server, proxy, store)
+registerImagesResource(server, store)
 
 const transport = new StdioServerTransport()
 await server.connect(transport)
