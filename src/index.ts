@@ -44,7 +44,7 @@ const proxy = new ProxyServer(store, { proxyPort, reactotronPort, timeout })
 
 const server = new McpServer({
   name: "reactotron-mcp",
-  version: "0.2.0",
+  version: "0.3.0",
 })
 
 registerGetLogs(server, store)
