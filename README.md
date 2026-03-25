@@ -113,9 +113,21 @@ Reactotron.configure({ host: 'localhost', port: 9091 }).connect()
 | `get_state_actions`   | View completed Redux or MobX-State-Tree actions. Filter by action type substring and limit. |
 | `get_state_changes`   | View state mutation events. Filter by state path substring and limit.       |
 | `get_benchmarks`      | View performance benchmark reports with per-step timings. Filter by title and limit. |
-| `run_custom_command`  | List or trigger custom commands registered by the app.                      |
-| `dispatch_action`     | Dispatch a Redux or MobX-State-Tree action to the app.                      |
-| `clear_messages`      | Clear captured messages from the in-memory buffer. Clears all buffers or a specific message type. |
+| `run_custom_command`      | List or trigger custom commands registered by the app.                      |
+| `dispatch_action`         | Dispatch a Redux or MobX-State-Tree action to the app.                      |
+| `clear_messages`          | Clear captured messages from the in-memory buffer. Clears all buffers or a specific message type. |
+| `list_custom_commands`    | List all custom commands currently registered by the connected app.         |
+| `get_connection_status`   | Check whether an app is currently connected to the proxy.                   |
+
+## Prompts
+
+Prompts are reusable templates that guide the AI through common debugging workflows. Invoke them via your AI assistant's prompt/slash-command interface.
+
+| Prompt             | Description                                                                                     |
+| ------------------ | ----------------------------------------------------------------------------------------------- |
+| `debug_app`        | Get a comprehensive debug snapshot — checks connection, logs, network, state, and recent actions. |
+| `trace_action`     | Trace a specific Redux/MST action through its payload, state changes, logs, and network side effects. Takes an `action` argument (e.g. `AUTH/LOGIN_SUCCESS`). |
+| `diagnose_network` | Identify and analyse failed or errored API requests, spot patterns, and check related state.    |
 
 ## Development
 
