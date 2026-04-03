@@ -1,21 +1,21 @@
 {
   "name": "reactotron-mcp",
+  "displayName": "Reactotron for VS Code",
   "version": "0.3.0",
-  "description": "An MCP server for Reactotron. Read logs, query state, run custom commands.",
+  "description": "Debug React and React Native apps with Reactotron — Copilot Chat tools and @reactotron participant for logs, state, network, benchmarks, and more.",
+  "publisher": "TODO_PUBLISHER_ID",
+  "icon": "images/icon.png",
   "keywords": [
     "reactotron",
-    "mcp",
-    "model-context-protocol",
     "react",
     "react-native",
     "debugging",
-    "devtools",
-    "websocket",
-    "claude",
-    "cursor",
-    "ai",
-    "llm",
-    "agent"
+    "copilot",
+    "devtools"
+  ],
+  "categories": [
+    "Debuggers",
+    "Other"
   ],
   "author": {
     "name": "Stephen Radford",
@@ -30,27 +30,402 @@
     "url": "https://github.com/steve228uk/reactotron-mcp/issues"
   },
   "license": "MIT",
-  "type": "module",
-  "files": [
-    "dist"
-  ],
-  "bin": {
-    "reactotron-mcp": "dist/index.js"
+  "engines": {
+    "vscode": "^1.96.0"
   },
+  "main": "./dist/extension.js",
+  "activationEvents": [],
   "scripts": {
-    "build": "bun build src/index.ts --outfile dist/index.js --target node --banner '#!/usr/bin/env node' && chmod +x dist/index.js",
-    "dev": "bun run src/index.ts",
-    "start": "bun run src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "package": "vsce package"
+  },
+  "contributes": {
+    "configuration": {
+      "title": "Reactotron",
+      "properties": {
+        "reactotron.proxyPort": {
+          "type": "number",
+          "default": 9091,
+          "description": "Port the Reactotron proxy listens on (apps connect here)."
+        },
+        "reactotron.reactotronPort": {
+          "type": "number",
+          "default": 9090,
+          "description": "Port the Reactotron desktop app runs on."
+        },
+        "reactotron.timeout": {
+          "type": "number",
+          "default": 5000,
+          "description": "Timeout in milliseconds for state query requests."
+        },
+        "reactotron.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start the proxy when the extension activates."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "reactotron-mcp.startProxy",
+        "title": "Reactotron: Start Proxy"
+      },
+      {
+        "command": "reactotron-mcp.stopProxy",
+        "title": "Reactotron: Stop Proxy"
+      },
+      {
+        "command": "reactotron-mcp.restartProxy",
+        "title": "Reactotron: Restart Proxy"
+      },
+      {
+        "command": "reactotron-mcp.clearMessages",
+        "title": "Reactotron: Clear Messages"
+      },
+      {
+        "command": "reactotron-mcp.showConnectionInfo",
+        "title": "Reactotron: Show Connection Info"
+      }
+    ],
+    "chatParticipants": [
+      {
+        "id": "reactotron-mcp.reactotron",
+        "name": "reactotron",
+        "fullName": "Reactotron Debug Assistant",
+        "description": "Debug React and React Native apps with Reactotron",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "debug",
+            "description": "Get a comprehensive debug snapshot of the connected app"
+          },
+          {
+            "name": "trace",
+            "description": "Trace a Redux/MST action through state changes and side effects"
+          },
+          {
+            "name": "network",
+            "description": "Diagnose network and API issues"
+          },
+          {
+            "name": "performance",
+            "description": "Analyse performance benchmarks and identify slow operations"
+          },
+          {
+            "name": "errors",
+            "description": "Triage all errors — error logs, failed requests, error state"
+          }
+        ],
+        "disambiguation": [
+          {
+            "category": "reactotron",
+            "description": "Debugging React/React Native apps with Reactotron",
+            "examples": [
+              "Show me recent logs",
+              "What network requests failed?",
+              "Trace the LOGIN action",
+              "Check app performance",
+              "What errors are there?"
+            ]
+          }
+        ]
+      }
+    ],
+    "languageModelTools": [
+      {
+        "name": "reactotron-mcp_getLogs",
+        "displayName": "Get Reactotron Logs",
+        "modelDescription": "Retrieve log messages captured from the connected React/React Native app via Reactotron.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": ["log", "debug", "warn", "error"],
+              "description": "Filter by log level"
+            },
+            "search": {
+              "type": "string",
+              "description": "Substring search in log message text"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max entries to return (default 50)"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getTimeline",
+        "displayName": "Get Reactotron Timeline",
+        "modelDescription": "Retrieve the full timeline of recent Reactotron messages across all types (logs, network, state actions, custom commands, etc.).",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "types": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Filter by message type(s), e.g. [\"log\", \"api.response\"]. Omit for all types."
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max entries to return (default 100)"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getNetwork",
+        "displayName": "Get Reactotron Network",
+        "modelDescription": "Retrieve captured API/network requests and responses from the app.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "Filter by URL substring"
+            },
+            "method": {
+              "type": "string",
+              "description": "Filter by HTTP method (GET, POST, etc.)"
+            },
+            "status": {
+              "type": "number",
+              "description": "Filter by HTTP status code"
+            },
+            "minDuration": {
+              "type": "number",
+              "description": "Only return requests slower than this many milliseconds"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max entries to return (default 50)"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getStateActions",
+        "displayName": "Get Reactotron State Actions",
+        "modelDescription": "Retrieve completed Redux or MobX-State-Tree actions captured from the connected app via Reactotron.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "actionType": {
+              "type": "string",
+              "description": "Filter by action type substring, e.g. \"USER\""
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max entries to return (default 50)"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getStateChanges",
+        "displayName": "Get Reactotron State Changes",
+        "modelDescription": "Retrieve state mutation events captured from the connected app via Reactotron.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Filter by state path substring, e.g. \"user\""
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max entries to return (default 50)"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getBenchmarks",
+        "displayName": "Get Reactotron Benchmarks",
+        "modelDescription": "Retrieve performance benchmark reports captured from the connected app via Reactotron.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Filter by benchmark title substring"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max entries to return (default 50)"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getDisplays",
+        "displayName": "Get Reactotron Displays",
+        "modelDescription": "Retrieve custom display messages sent via reactotron.display(). Structured debug entries with a name, optional preview, and arbitrary value.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "search": {
+              "type": "string",
+              "description": "Substring search across display name and preview"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Max entries to return (default 50)"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getImages",
+        "displayName": "Get Reactotron Images",
+        "modelDescription": "Retrieve images logged via reactotron.image(). Returns each image rendered inline alongside its metadata.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "number",
+              "description": "Max images to return (default 20)"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getErrors",
+        "displayName": "Get Reactotron Errors",
+        "modelDescription": "Get a consolidated view of all errors: error-level logs and failed network requests (4xx/5xx). Useful for a quick 'what's broken' overview.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getAppInfo",
+        "displayName": "Get Reactotron App Info",
+        "modelDescription": "Retrieve metadata about the connected app — app name, version, platform, and React/React Native versions.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getConnectionStatus",
+        "displayName": "Get Reactotron Connection Status",
+        "modelDescription": "Check whether a React/React Native app is currently connected to the Reactotron proxy, including app metadata.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_listCustomCommands",
+        "displayName": "List Reactotron Custom Commands",
+        "modelDescription": "List all custom commands currently registered by the connected app in Reactotron.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_getState",
+        "displayName": "Get Reactotron State",
+        "modelDescription": "Query the app's state tree (Redux, MobX-State-Tree, etc.) via Reactotron. Use 'keys' to browse available paths, 'values' to read actual data.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Dot-separated state path to query, e.g. \"user.profile\" or \"\" for root"
+            },
+            "query": {
+              "type": "string",
+              "enum": ["keys", "values"],
+              "description": "'keys' returns child key names at the path; 'values' returns the actual value (default: 'values')"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_dispatchAction",
+        "displayName": "Dispatch Reactotron Action",
+        "modelDescription": "Dispatch a Redux or MobX-State-Tree action to the app via Reactotron.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "The action type string, e.g. \"USER/LOGOUT\""
+            },
+            "payload": {
+              "type": "object",
+              "description": "Optional action payload object"
+            }
+          },
+          "required": ["type"]
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_runCustomCommand",
+        "displayName": "Run Reactotron Custom Command",
+        "modelDescription": "Trigger a custom command registered by the app in Reactotron. Call with no 'command' argument to list all available commands.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "The command identifier to trigger"
+            },
+            "args": {
+              "type": "object",
+              "description": "Arguments to pass to the command"
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      },
+      {
+        "name": "reactotron-mcp_clearMessages",
+        "displayName": "Clear Reactotron Messages",
+        "modelDescription": "Clear captured Reactotron messages from the in-memory buffer. Clears all buffers by default, or a specific message type.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["log", "api.response", "state.action.complete", "state.values.change", "benchmark.report"],
+              "description": "Message type to clear. Omit to clear all buffers."
+            }
+          }
+        },
+        "tags": ["reactotron", "debugging"]
+      }
+    ]
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "ws": "^8.18.0",
-    "zod": "^3.25.0"
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "@types/vscode": "^1.96.0",
     "@types/ws": "^8.5.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.24.0",
     "typescript": "^5.7.0"
   }
 }

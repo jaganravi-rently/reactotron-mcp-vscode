@@ -1,6 +1,7 @@
 import { WebSocket, WebSocketServer } from "ws"
-import type { MessageStore } from "./message-store.js"
-import type { ReactotronMessage } from "./types.js"
+import { EventEmitter } from "events"
+import type { MessageStore } from "./message-store"
+import type { ReactotronMessage } from "./types"
 
 const RECONNECT_DELAYS_MS = [1000, 2000, 4000, 8000, 16000]
 
@@ -146,8 +147,8 @@ class ProxyConnection {
   }
 }
 
-export class ProxyServer {
-  private wss: WebSocketServer
+export class ProxyServer extends EventEmitter {
+  private wss: WebSocketServer | null = null
   private store: MessageStore
   private reactotronHost: string
   private reactotronPort: number
@@ -169,17 +170,22 @@ export class ProxyServer {
       timeout?: number
     } = {},
   ) {
+    super()
     this.store = store
     this.reactotronHost = opts.reactotronHost ?? "localhost"
     this.reactotronPort = opts.reactotronPort ?? 9090
     this.timeout = opts.timeout ?? 5000
     this.proxyPort = opts.proxyPort ?? 9091
+  }
 
+  start(): void {
+    if (this.wss) return
     this.wss = new WebSocketServer({ port: this.proxyPort })
 
     this.wss.on("connection", (appSocket) => {
       this.activeConnection?.close()
       this.connected = true
+      this.emit("connectionChange", true)
       this.activeConnection = new ProxyConnection(
         appSocket,
         this.reactotronHost,
@@ -187,6 +193,7 @@ export class ProxyServer {
         (msg) => this._handleMessage(msg),
         () => {
           this.connected = false
+          this.emit("connectionChange", false)
           this.activeConnection = null
           this._rejectPendingQueries(new Error("App disconnected"))
         },
@@ -267,7 +274,16 @@ export class ProxyServer {
     })
   }
 
-  close(): void {
-    this.wss.close()
+  dispose(): void {
+    this.activeConnection?.close()
+    this.activeConnection = null
+    this._rejectPendingQueries(new Error("Proxy disposed"))
+    if (this.wss) {
+      this.wss.close()
+      this.wss = null
+    }
+    this.connected = false
+    this.emit("connectionChange", false)
+    this.removeAllListeners()
   }
 }

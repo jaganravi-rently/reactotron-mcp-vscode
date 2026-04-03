@@ -1,21 +1,6 @@
-import type { ReactotronMessage, LogPayload, ApiResponsePayload, CustomCommandRegistration, StateActionCompletePayload, StateValuesChangePayload, BenchmarkReportPayload, ClientIntroPayload, ImagePayload } from "./types.js"
+import type { ReactotronMessage, LogPayload, ApiResponsePayload, CustomCommandRegistration, StateActionCompletePayload, StateValuesChangePayload, BenchmarkReportPayload, ClientIntroPayload, ImagePayload } from "./types"
 
 const MAX_BUFFER = 1000
-
-// Map from Reactotron message type to the resource URIs that should be marked updated.
-// reactotron://timeline is added for any message type that enters the timeline buffer.
-const MESSAGE_TYPE_TO_URIS: Record<string, string[]> = {
-  log: ["reactotron://logs", "reactotron://timeline"],
-  "api.response": ["reactotron://network", "reactotron://timeline"],
-  "state.action.complete": ["reactotron://state-actions", "reactotron://timeline"],
-  "state.values.change": ["reactotron://state-changes", "reactotron://timeline"],
-  "benchmark.report": ["reactotron://benchmarks", "reactotron://timeline"],
-  display: ["reactotron://displays", "reactotron://timeline"],
-  image: ["reactotron://images", "reactotron://timeline"],
-  "client.intro": ["reactotron://connection"],
-  "customCommand.register": ["reactotron://custom-commands"],
-  "customCommand.unregister": ["reactotron://custom-commands"],
-}
 
 function deserializeSentinels(value: unknown): unknown {
   if (value === "~~~ undefined ~~~") return undefined
@@ -48,9 +33,6 @@ export class MessageStore {
   timeline: ReactotronMessage[] = []
   customCommands = new Map<string, CustomCommandRegistration>()
   clientInfo: ClientIntroPayload | null = null
-
-  /** Called after each ingest with the URIs of resources that have new data. */
-  onUpdate?: (uris: string[]) => void
 
   ingest(raw: ReactotronMessage): void {
     const msg: ReactotronMessage = {
@@ -96,9 +78,6 @@ export class MessageStore {
         break
       }
     }
-
-    const uris = MESSAGE_TYPE_TO_URIS[msg.type]
-    if (uris) this.onUpdate?.(uris)
   }
 
   getLogs(opts: { level?: string; search?: string; limit?: number } = {}): ReactotronMessage[] {
