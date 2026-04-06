@@ -107,61 +107,82 @@ export function registerChatParticipant(
         inputSchema: t.inputSchema,
       }))
 
-      const chatResponse = await request.model.sendRequest(
-        messages,
-        {
-          tools: toolReferences,
-        },
-        token,
-      )
+      const MAX_TOOL_ROUNDS = 10
+      for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+        const chatResponse = await request.model.sendRequest(
+          messages,
+          { tools: toolReferences },
+          token,
+        )
 
-      // Stream the LLM response, handling text and tool call fragments
-      const toolCallAccumulator = new Map<
-        number,
-        { callId: string; name: string; inputJson: string }
-      >()
+        // Collect the full response (text parts + tool call parts)
+        const textParts: string[] = []
+        const toolCalls: { callId: string; name: string; input: object }[] = []
 
-      for await (const fragment of chatResponse.stream) {
-        if (fragment instanceof vscode.LanguageModelTextPart) {
-          response.markdown(fragment.value)
-        } else if (fragment instanceof vscode.LanguageModelToolCallPart) {
-          const existing = toolCallAccumulator.get(fragment.callId ? 0 : 0)
-          if (!existing) {
-            toolCallAccumulator.set(toolCallAccumulator.size, {
+        for await (const fragment of chatResponse.stream) {
+          if (fragment instanceof vscode.LanguageModelTextPart) {
+            textParts.push(fragment.value)
+            response.markdown(fragment.value)
+          } else if (fragment instanceof vscode.LanguageModelToolCallPart) {
+            toolCalls.push({
               callId: fragment.callId,
               name: fragment.name,
-              inputJson:
+              input: (
                 typeof fragment.input === "string"
-                  ? fragment.input
-                  : JSON.stringify(fragment.input),
+                  ? JSON.parse(fragment.input || "{}")
+                  : fragment.input ?? {}
+              ) as object,
             })
           }
         }
-      }
 
-      // If the model requested tool calls, invoke them and feed results back
-      if (toolCallAccumulator.size > 0) {
-        for (const [, call] of toolCallAccumulator) {
-          const input = JSON.parse(call.inputJson || "{}")
+        // If no tool calls, the model is done — break out
+        if (toolCalls.length === 0) {
+          break
+        }
+
+        // Add the assistant's response (text + tool calls) to messages
+        const assistantParts: (vscode.LanguageModelTextPart | vscode.LanguageModelToolCallPart)[] =
+          []
+        if (textParts.length > 0) {
+          assistantParts.push(new vscode.LanguageModelTextPart(textParts.join("")))
+        }
+        for (const call of toolCalls) {
+          assistantParts.push(
+            new vscode.LanguageModelToolCallPart(call.callId, call.name, call.input),
+          )
+        }
+        messages.push(vscode.LanguageModelChatMessage.Assistant(assistantParts))
+
+        // Invoke each tool and add results back as tool-result messages
+        for (const call of toolCalls) {
           try {
-            const result = await vscode.lm.invokeTool(call.name, {
-              input,
-              toolInvocationToken: undefined,
-              tokenizationOptions: undefined,
-            }, token)
+            const result = await vscode.lm.invokeTool(
+              call.name,
+              {
+                input: call.input,
+                toolInvocationToken: undefined,
+                tokenizationOptions: undefined,
+              },
+              token,
+            )
 
-            // Extract text from the tool result
-            for (const part of result.content) {
-              if (part instanceof vscode.LanguageModelTextPart) {
-                response.markdown(`\n\n**${call.name}:**\n${part.value}`)
-              }
-            }
+            messages.push(
+              vscode.LanguageModelChatMessage.User([
+                new vscode.LanguageModelToolResultPart(call.callId, result.content),
+              ]),
+            )
           } catch (err) {
-            response.markdown(
-              `\n\n**${call.name} failed:** ${(err as Error).message}`,
+            messages.push(
+              vscode.LanguageModelChatMessage.User([
+                new vscode.LanguageModelToolResultPart(call.callId, [
+                  new vscode.LanguageModelTextPart(`Error: ${(err as Error).message}`),
+                ]),
+              ]),
             )
           }
         }
+        // Loop back — the model will now see the tool results and can continue
       }
 
       return {}
