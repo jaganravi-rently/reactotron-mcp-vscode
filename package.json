@@ -3,7 +3,7 @@
   "displayName": "Reactotron for VS Code",
   "version": "0.3.0",
   "description": "Debug React and React Native apps with Reactotron — Copilot Chat tools and @reactotron participant for logs, state, network, benchmarks, and more.",
-  "publisher": "TODO_PUBLISHER_ID",
+  "publisher": "JaganRavi",
   "icon": "images/icon.png",
   "keywords": [
     "reactotron",
