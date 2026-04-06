@@ -8,6 +8,12 @@ import { registerCommands } from "./commands"
 
 let store: MessageStore
 let proxy: ProxyServer | null = null
+let outputChannel: vscode.OutputChannel
+
+function log(msg: string) {
+  const ts = new Date().toLocaleTimeString()
+  outputChannel?.appendLine(`[${ts}] ${msg}`)
+}
 
 function readConfig() {
   const config = vscode.workspace.getConfiguration("reactotron")
@@ -26,8 +32,10 @@ function startProxy() {
     proxyPort: cfg.proxyPort,
     reactotronPort: cfg.reactotronPort,
     timeout: cfg.timeout,
+    log,
   })
   proxy.start()
+  log(`Proxy started on port ${cfg.proxyPort} (upstream Reactotron: ${cfg.reactotronPort})`)
 }
 
 function stopProxy() {
@@ -37,6 +45,9 @@ function stopProxy() {
 }
 
 export function activate(context: vscode.ExtensionContext): void {
+  outputChannel = vscode.window.createOutputChannel("Reactotron")
+  context.subscriptions.push(outputChannel)
+
   store = new MessageStore()
   const cfg = readConfig()
 
@@ -44,9 +55,16 @@ export function activate(context: vscode.ExtensionContext): void {
     startProxy()
   }
 
-  registerAllTools(context, store, proxy!)
-  registerChatParticipant(context, store, proxy!)
-  createStatusBar(context, proxy!)
+  // Use getters so tools/participant always see the current proxy, even after restart
+  const proxyRef = { get current() { return proxy! } }
+  registerAllTools(context, store, proxyRef)
+  registerChatParticipant(context, store, proxyRef)
+  if (proxy) {
+    createStatusBar(context, proxy)
+    proxy.on("connectionChange", (connected: boolean) => {
+      log(`Connection changed: ${connected ? "connected" : "disconnected"}`)
+    })
+  }
   registerCommands(
     context,
     store,
@@ -55,10 +73,8 @@ export function activate(context: vscode.ExtensionContext): void {
     stopProxy,
   )
 
-  const outputChannel = vscode.window.createOutputChannel("Reactotron")
-  context.subscriptions.push(outputChannel)
-  outputChannel.appendLine(
-    `Reactotron extension activated. Proxy ${cfg.autoStart ? `listening on port ${cfg.proxyPort}` : "not started (autoStart disabled)"}.`,
+  log(
+    `Extension activated. Proxy ${cfg.autoStart ? `listening on port ${cfg.proxyPort}` : "not started (autoStart disabled)"}.`,
   )
 }
 

@@ -157,6 +157,7 @@ export class ProxyServer extends EventEmitter {
   private stateQueryMutex = new Mutex()
   private pendingKeys: PendingQuery | null = null
   private pendingValues: PendingQuery | null = null
+  private log: (msg: string) => void
 
   connected = false
   readonly proxyPort: number
@@ -168,6 +169,7 @@ export class ProxyServer extends EventEmitter {
       reactotronPort?: number
       reactotronHost?: string
       timeout?: number
+      log?: (msg: string) => void
     } = {},
   ) {
     super()
@@ -176,13 +178,20 @@ export class ProxyServer extends EventEmitter {
     this.reactotronPort = opts.reactotronPort ?? 9090
     this.timeout = opts.timeout ?? 5000
     this.proxyPort = opts.proxyPort ?? 9091
+    this.log = opts.log ?? (() => {})
   }
 
   start(): void {
     if (this.wss) return
     this.wss = new WebSocketServer({ port: this.proxyPort })
+    this.log(`Proxy WebSocket server listening on port ${this.proxyPort}`)
 
-    this.wss.on("connection", (appSocket) => {
+    this.wss.on("error", (err) => {
+      this.log(`WebSocket server error: ${err.message}`)
+    })
+
+    this.wss.on("connection", (appSocket, req) => {
+      this.log(`App connected from ${req.socket.remoteAddress}:${req.socket.remotePort}`)
       this.activeConnection?.close()
       this.connected = true
       this.emit("connectionChange", true)
@@ -192,6 +201,7 @@ export class ProxyServer extends EventEmitter {
         this.reactotronPort,
         (msg) => this._handleMessage(msg),
         () => {
+          this.log("App disconnected")
           this.connected = false
           this.emit("connectionChange", false)
           this.activeConnection = null

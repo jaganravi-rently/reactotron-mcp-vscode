@@ -24,10 +24,14 @@ function textResult(text: string): vscode.LanguageModelToolResult {
   ])
 }
 
+export interface ProxyRef {
+  readonly current: ProxyServer
+}
+
 export function registerAllTools(
   context: vscode.ExtensionContext,
   store: MessageStore,
-  proxy: ProxyServer,
+  proxyRef: ProxyRef,
 ): void {
   // get_logs
   context.subscriptions.push(
@@ -153,7 +157,7 @@ export function registerAllTools(
   context.subscriptions.push(
     vscode.lm.registerTool("reactotron-mcp_getConnectionStatus", {
       invoke(_options, _token) {
-        return textResult(handleGetConnectionStatus(proxy, store))
+        return textResult(handleGetConnectionStatus(proxyRef.current, store))
       },
       prepareInvocation() {
         return { invocationMessage: "Checking connection status..." }
@@ -177,7 +181,7 @@ export function registerAllTools(
   context.subscriptions.push(
     vscode.lm.registerTool<GetStateParams>("reactotron-mcp_getState", {
       async invoke(options, _token) {
-        const result = await handleGetState(options.input, proxy)
+        const result = await handleGetState(options.input, proxyRef.current)
         return textResult(result)
       },
       prepareInvocation() {
@@ -190,7 +194,7 @@ export function registerAllTools(
   context.subscriptions.push(
     vscode.lm.registerTool<DispatchActionParams>("reactotron-mcp_dispatchAction", {
       invoke(options, _token) {
-        return textResult(handleDispatchAction(options.input, proxy))
+        return textResult(handleDispatchAction(options.input, proxyRef.current))
       },
       prepareInvocation(options) {
         return {
@@ -214,7 +218,7 @@ export function registerAllTools(
   context.subscriptions.push(
     vscode.lm.registerTool<RunCustomCommandParams>("reactotron-mcp_runCustomCommand", {
       invoke(options, _token) {
-        return textResult(handleRunCustomCommand(options.input, store, proxy))
+        return textResult(handleRunCustomCommand(options.input, store, proxyRef.current))
       },
       prepareInvocation(options) {
         if (options.input.command) {

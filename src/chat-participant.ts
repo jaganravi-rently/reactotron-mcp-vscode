@@ -2,6 +2,10 @@ import * as vscode from "vscode"
 import type { MessageStore } from "./message-store"
 import type { ProxyServer } from "./proxy-server"
 
+export interface ProxyRef {
+  readonly current: ProxyServer
+}
+
 const PROMPT_DEBUG = `Please give me a full debug overview of my React app using Reactotron. Follow these steps:
 
 1. Check get_connection_status to confirm an app is connected.
@@ -55,7 +59,7 @@ Walk me through what happened: what the action contained, how state changed, and
 export function registerChatParticipant(
   context: vscode.ExtensionContext,
   _store: MessageStore,
-  _proxy: ProxyServer,
+  _proxyRef: ProxyRef,
 ): void {
   const participant = vscode.chat.createChatParticipant(
     "reactotron-mcp.reactotron",
