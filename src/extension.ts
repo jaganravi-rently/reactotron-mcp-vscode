@@ -9,6 +9,7 @@ import { registerCommands } from "./commands"
 let store: MessageStore
 let proxy: ProxyServer | null = null
 let outputChannel: vscode.OutputChannel
+let updateStatusBar: (() => void) | null = null
 
 function log(msg: string) {
   const ts = new Date().toLocaleTimeString()
@@ -34,7 +35,16 @@ function startProxy() {
     timeout: cfg.timeout,
     log,
   })
+  proxy.on("connectionChange", (connected: boolean) => {
+    log(`App connection changed: ${connected ? "connected" : "disconnected"}`)
+    updateStatusBar?.()
+  })
+  proxy.on("upstreamConnectionChange", (connected: boolean) => {
+    log(`Reactotron Desktop connection changed: ${connected ? "connected" : "disconnected"}`)
+    updateStatusBar?.()
+  })
   proxy.start()
+  updateStatusBar?.()
   log(`Proxy started on port ${cfg.proxyPort} (upstream Reactotron: ${cfg.reactotronPort})`)
 }
 
@@ -42,6 +52,7 @@ function stopProxy() {
   if (!proxy) return
   proxy.dispose()
   proxy = null
+  updateStatusBar?.()
 }
 
 export function activate(context: vscode.ExtensionContext): void {
@@ -59,12 +70,10 @@ export function activate(context: vscode.ExtensionContext): void {
   const proxyRef = { get current() { return proxy! } }
   registerAllTools(context, store, proxyRef)
   registerChatParticipant(context, store, proxyRef)
-  if (proxy) {
-    createStatusBar(context, proxy)
-    proxy.on("connectionChange", (connected: boolean) => {
-      log(`Connection changed: ${connected ? "connected" : "disconnected"}`)
-    })
-  }
+
+  const statusBar = createStatusBar(context, () => proxy)
+  updateStatusBar = statusBar.update
+
   registerCommands(
     context,
     store,

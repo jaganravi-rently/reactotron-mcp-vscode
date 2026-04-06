@@ -46,18 +46,19 @@ export function registerCommands(
         return
       }
 
-      if (!proxy.connected) {
-        vscode.window.showInformationMessage(
-          `Reactotron proxy listening on port ${proxy.proxyPort}. No app connected.`,
-        )
-        return
+      const lines: string[] = [`Proxy listening on port ${proxy.proxyPort}`]
+
+      if (proxy.connected) {
+        lines.push("App: Connected")
+        const info = store.clientInfo
+        if (info?.name) lines.push(`App: ${info.name}${info.version ? ` v${info.version}` : ""}`)
+        if (info?.platform) lines.push(`Platform: ${info.platform}`)
+        if (info?.reactNativeVersion) lines.push(`React Native: ${info.reactNativeVersion}`)
+      } else {
+        lines.push("App: Not connected")
       }
 
-      const info = store.clientInfo
-      const lines = [`Connected on port ${proxy.proxyPort}`]
-      if (info?.name) lines.push(`App: ${info.name}${info.version ? ` v${info.version}` : ""}`)
-      if (info?.platform) lines.push(`Platform: ${info.platform}`)
-      if (info?.reactNativeVersion) lines.push(`React Native: ${info.reactNativeVersion}`)
+      lines.push(proxy.reactotronConnected ? "Reactotron Desktop: Connected" : "Reactotron Desktop: Not connected")
 
       vscode.window.showInformationMessage(lines.join(" | "))
     }),

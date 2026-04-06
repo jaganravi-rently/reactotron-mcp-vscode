@@ -30,6 +30,8 @@ class ProxyConnection {
   private readonly reactotronPort: number
   private readonly onMessage: (msg: ReactotronMessage) => void
   private readonly onClose: () => void
+  private readonly onUpstreamChange: (connected: boolean) => void
+  private readonly log: (msg: string) => void
   private reconnectAttempt = 0
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private closed = false
@@ -43,12 +45,16 @@ class ProxyConnection {
     reactotronPort: number,
     onMessage: (msg: ReactotronMessage) => void,
     onClose: () => void,
+    onUpstreamChange: (connected: boolean) => void,
+    log: (msg: string) => void,
   ) {
     this.appSocket = appSocket
     this.reactotronHost = reactotronHost
     this.reactotronPort = reactotronPort
     this.onMessage = onMessage
     this.onClose = onClose
+    this.onUpstreamChange = onUpstreamChange
+    this.log = log
 
     this._connectUpstream()
 
@@ -86,6 +92,8 @@ class ProxyConnection {
     upstream.on("open", () => {
       this.reactotronConnected = true
       this.reconnectAttempt = 0
+      this.log(`Reactotron Desktop connected (upstream ${this.reactotronHost}:${this.reactotronPort})`)
+      this.onUpstreamChange(true)
     })
 
     upstream.on("message", (data) => {
@@ -101,7 +109,12 @@ class ProxyConnection {
     })
 
     upstream.on("close", () => {
+      const wasConnected = this.reactotronConnected
       this.reactotronConnected = false
+      if (wasConnected) {
+        this.log("Reactotron Desktop disconnected, will reconnect...")
+      }
+      this.onUpstreamChange(false)
       // Keep the app socket alive and schedule a reconnect to Reactotron
       this._scheduleReconnect()
     })
@@ -160,6 +173,7 @@ export class ProxyServer extends EventEmitter {
   private log: (msg: string) => void
 
   connected = false
+  reactotronConnected = false
   readonly proxyPort: number
 
   constructor(
@@ -203,10 +217,16 @@ export class ProxyServer extends EventEmitter {
         () => {
           this.log("App disconnected")
           this.connected = false
+          this.reactotronConnected = false
           this.emit("connectionChange", false)
           this.activeConnection = null
           this._rejectPendingQueries(new Error("App disconnected"))
         },
+        (upstreamConnected) => {
+          this.reactotronConnected = upstreamConnected
+          this.emit("upstreamConnectionChange", upstreamConnected)
+        },
+        this.log,
       )
     })
   }
@@ -293,6 +313,7 @@ export class ProxyServer extends EventEmitter {
       this.wss = null
     }
     this.connected = false
+    this.reactotronConnected = false
     this.emit("connectionChange", false)
     this.removeAllListeners()
   }
